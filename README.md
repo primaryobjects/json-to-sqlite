@@ -2,6 +2,8 @@
 
 Convert a JSON file to an SQLite database right from VSCode!
 
+[Install](https://marketplace.visualstudio.com/items?itemName=primaryobjects.json-to-sqlite) in VSCode.
+
 ![Screenshot](images/jsontosqlite.gif)
 
 ## Quick Start
