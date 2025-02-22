@@ -2,8 +2,14 @@ import * as vscode from 'vscode';
 import fs from 'fs';
 const sqlite3 = require('sqlite3').verbose();
 
+function getColumnType(value: any): string {
+    if (typeof value === 'number') {
+        return Number.isInteger(value) ? 'INTEGER' : 'REAL';
+    }
+    return 'TEXT';
+}
+
 export async function convertJsonToSqlite(fileUri: vscode.Uri | undefined) {
-    // If filePath is not provided, prompt the user to select a JSON file.
     if (!fileUri) {
         fileUri = (await vscode.window.showOpenDialog({ canSelectFiles: true, canSelectMany: false, filters: { 'JSON Files': ['json'] } }))?.[0];
     }
@@ -17,20 +23,29 @@ export async function convertJsonToSqlite(fileUri: vscode.Uri | undefined) {
             }
 
             const jsonData = JSON.parse(data);
-            // Create an sqlite database in a file in the current directory using the same filename as input.
+            if (!Array.isArray(jsonData) || jsonData.length === 0) {
+                vscode.window.showErrorMessage('JSON file is empty or not an array');
+                return;
+            }
+
             const fileName = jsonFile.split('.').slice(0, -1).join('.');
             const db = new sqlite3.Database(`${fileName}.sqlite`);
 
             db.serialize(() => {
-                db.run(`CREATE TABLE data (id INTEGER PRIMARY KEY, content TEXT)`);
+                // Get the keys from the first object to create table columns with appropriate data types
+                const columns = Object.keys(jsonData[0]).map(key => `${key} ${getColumnType(jsonData[0][key])}`).join(', ');
+                db.run(`CREATE TABLE data (${columns})`);
 
-                const stmt = db.prepare('INSERT INTO data (content) VALUES (?)');
-                jsonData.forEach((item: object, index: number) => {
-                    stmt.run(JSON.stringify(item));
+                const placeholders = Object.keys(jsonData[0]).map(() => '?').join(', ');
+                const stmt = db.prepare(`INSERT INTO data (${Object.keys(jsonData[0]).join(', ')}) VALUES (${placeholders})`);
+
+                jsonData.forEach((item: any) => {
+                    const values = Object.keys(item).map(key => item[key]);
+                    stmt.run(values);
                 });
                 stmt.finalize();
 
-                db.each('SELECT * FROM data', (err: any, row: string) => {
+                db.each('SELECT * FROM data', (err: any, row: any) => {
                     if (err) {
                         console.error(err.message);
                     } else {
@@ -40,7 +55,6 @@ export async function convertJsonToSqlite(fileUri: vscode.Uri | undefined) {
             });
 
             db.close();
-            // Display the path to the sqlite file in a message box.
             vscode.window.showInformationMessage(`SQLite file created at ${fileName}.sqlite`);
         });
     }
