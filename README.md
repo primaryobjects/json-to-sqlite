@@ -2,7 +2,7 @@
 
 Convert a JSON file to an SQLite database right from VSCode!
 
-![Screenshot](/jsontosqlite.gif)
+![Screenshot](images/jsontosqlite.gif)
 
 ## Quick Start
 
