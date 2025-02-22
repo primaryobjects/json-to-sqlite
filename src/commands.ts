@@ -18,7 +18,8 @@ export async function convertJsonToSqlite(fileUri: vscode.Uri | undefined) {
 
             const jsonData = JSON.parse(data);
             // Create an sqlite database in a file in the current directory using the same filename as input.
-            const db = new sqlite3.Database(`${jsonFile}.sqlite`);
+            const fileName = jsonFile.split('.').slice(0, -1).join('.');
+            const db = new sqlite3.Database(`${fileName}.sqlite`);
 
             db.serialize(() => {
                 db.run(`CREATE TABLE data (id INTEGER PRIMARY KEY, content TEXT)`);
