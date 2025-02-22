@@ -41,7 +41,7 @@ export async function convertJsonToSqlite(fileUri: vscode.Uri | undefined) {
 
             db.close();
             // Display the path to the sqlite file in a message box.
-            vscode.window.showInformationMessage(`SQLite file created at ${jsonFile}.sqlite`);
+            vscode.window.showInformationMessage(`SQLite file created at ${fileName}.sqlite`);
         });
     }
 }
