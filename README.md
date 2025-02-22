@@ -23,6 +23,10 @@ To preview an SQLite file contents:
 - Right-click a JSON file or use the command pallete **Ctrl-Shift-P->Convert JSON to SQLite** and choose a file.
 - Preview SQLite file contents.
 
+## License
+
+MIT
+
 ## Author
 
 Kory Becker http://www.primaryobjects.com/kory-becker
