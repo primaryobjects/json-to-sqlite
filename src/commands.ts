@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import fs from 'fs';
+import * as path from 'path';
 const sqlite3 = require('sqlite3').verbose();
 
 function getColumnType(value: any): string {
@@ -28,16 +29,21 @@ export async function convertJsonToSqlite(fileUri: vscode.Uri | undefined) {
                 return;
             }
 
-            const fileName = jsonFile.split('.').slice(0, -1).join('.');
-            const db = new sqlite3.Database(`${fileName}.sqlite`);
+            const filePath = jsonFile.split('.').slice(0, -1).join('.');
+            const fileName = path.basename(jsonFile, path.extname(jsonFile));
+            const useFilenameAsTableName = vscode.workspace.getConfiguration('jsonToSqlite').get('useFilenameAsTableName', true);
+            const customTableName = vscode.workspace.getConfiguration('jsonToSqlite').get('customTableName', '');
+            const tableName = useFilenameAsTableName ? fileName : customTableName || 'data';
+
+            const db = new sqlite3.Database(`${filePath}.sqlite`);
 
             db.serialize(() => {
                 // Get the keys from the first object to create table columns with appropriate data types
                 const columns = Object.keys(jsonData[0]).map(key => `${key} ${getColumnType(jsonData[0][key])}`).join(', ');
-                db.run(`CREATE TABLE data (${columns})`);
+                db.run(`CREATE TABLE ${tableName} (${columns})`);
 
                 const placeholders = Object.keys(jsonData[0]).map(() => '?').join(', ');
-                const stmt = db.prepare(`INSERT INTO data (${Object.keys(jsonData[0]).join(', ')}) VALUES (${placeholders})`);
+                const stmt = db.prepare(`INSERT INTO ${tableName} (${Object.keys(jsonData[0]).join(', ')}) VALUES (${placeholders})`);
 
                 jsonData.forEach((item: any) => {
                     const values = Object.keys(item).map(key => item[key]);
@@ -45,7 +51,7 @@ export async function convertJsonToSqlite(fileUri: vscode.Uri | undefined) {
                 });
                 stmt.finalize();
 
-                db.each('SELECT * FROM data', (err: any, row: any) => {
+                db.each(`SELECT * FROM ${tableName}`, (err: any, row: any) => {
                     if (err) {
                         console.error(err.message);
                     } else {
@@ -55,7 +61,7 @@ export async function convertJsonToSqlite(fileUri: vscode.Uri | undefined) {
             });
 
             db.close();
-            vscode.window.showInformationMessage(`SQLite file created at ${fileName}.sqlite`);
+            vscode.window.showInformationMessage(`SQLite file created at ${filePath}.sqlite`);
         });
     }
 }

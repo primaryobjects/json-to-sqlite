@@ -2,7 +2,7 @@
   "name": "json-to-sqlite",
   "displayName": "json-to-sqlite",
   "description": "Convert JSON data to SQLite database",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/primaryobjects/json-to-sqlite.git"
@@ -44,6 +44,21 @@
           "when": "resourceExtname == .sqlite"
         }
       ]
+    },
+    "configuration": {
+      "type": "object",
+      "properties": {
+        "jsonToSqlite.useFilenameAsTableName": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use the input filename as the name of the database table."
+        },
+        "jsonToSqlite.customTableName": {
+          "type": "string",
+          "default": "",
+          "description": "Use a custom name for the database table."
+        }
+      }
     }
   },
   "scripts": {
