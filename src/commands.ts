@@ -39,9 +39,16 @@ export async function convertJsonToSqlite(fileUri: vscode.Uri | undefined) {
             db.serialize(() => {
                 if (Array.isArray(jsonData) && jsonData.length > 0 && typeof jsonData[0] === 'object') {
                     if (!Array.isArray(jsonData[0])) {
-                        handleSingleTableFormat(db, jsonData, fileName, useFilenameAsTableName, customTableName);
-                    } else {
-                        handleMultipleTablesFormat(db, jsonData);
+                        const jsonDataEntry = jsonData[0];
+                        const keys = Object.keys(jsonData[0]);
+                        if (keys && keys.length > 0) {
+                            if (Array.isArray(jsonDataEntry[keys[0]])) {
+                                handleMultipleTablesFormat(db, jsonData);
+                            }
+                            else {
+                                handleSingleTableFormat(db, jsonData, fileName, useFilenameAsTableName, customTableName);
+                            }
+                        }
                     }
                 } else if (typeof jsonData === 'object') {
                     handleNamedTableFormat(db, jsonData);
