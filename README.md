@@ -35,6 +35,93 @@ To change the name of the table saved in the sqlite file, use the following step
 - Preview SQLite file contents.
 - Customize the table name stored in sqlite.
 
+## JSON Formats
+
+The following JSON file formats are supported for conversion to SQLite:
+
+### Array
+
+This results in a single table with the name of the JSON file or as configured in settings.
+
+```json
+[
+  {
+    "id": 1,
+    "first_name": "Loella",
+    "last_name": "Albers",
+  },
+  {
+    "id": 2,
+    "first_name": "Laurie",
+    "last_name": "Strongman"
+  }
+]
+```
+
+### Format 2
+
+This results in a single table with the name "locations".
+
+```json
+{
+  "locations": [
+    {
+      "id": 0,
+      "name": "Acme Fresh Start Housing",
+      "city": "Chicago",
+      "state": "IL",
+    },
+    {
+      "id": 1,
+      "name": "A113 Transitional Housing",
+      "city": "Santa Monica",
+      "state": "CA"
+    }
+  ]
+}
+```
+
+### Format 3
+
+This results in an sqlite database containing two tables with the names "table1" and "table2".
+
+```json
+[
+  {
+    "table1": [
+      {
+        "id": 0,
+        "name": "Acme Fresh Start Housing",
+        "city": "Chicago",
+        "state": "IL",
+      },
+      {
+        "id": 1,
+        "name": "A113 Transitional Housing",
+        "city": "Santa Monica",
+        "state": "CA",
+      }
+    ]
+  },
+  {
+    "table2": [
+      {
+        "id": 0,
+        "name": "Acme Fresh Start Housing",
+        "city": "Chicago",
+        "state": "IL",
+      },
+      {
+        "id": 1,
+        "name": "A113 Transitional Housing",
+        "city": "Santa Monica",
+        "state": "CA",
+      }
+    ]
+  }
+]
+```
+
 ## License
 
 MIT
