@@ -62,11 +62,13 @@ export async function convertJsonToSqlite(fileUri: vscode.Uri | undefined) {
 }
 
 function handleSingleTableFormat(db: any, jsonData: any[], fileName: string, useFilenameAsTableName: boolean, customTableName: string) {
+    // [{"field1": "a", "field2": "b"}]
     const tableName = useFilenameAsTableName ? fileName : customTableName || 'data';
     createTableAndInsertData(db, tableName, jsonData);
 }
 
 function handleNamedTableFormat(db: any, jsonData: any) {
+    // { "table1": [{"field1": "a", "field2": "b"}], "table2": [{"field1": "a", "field2": "b"}] }
     const tableNames = Object.keys(jsonData);
     tableNames.forEach(tableName => {
         createTableAndInsertData(db, tableName, jsonData[tableName]);
@@ -74,6 +76,7 @@ function handleNamedTableFormat(db: any, jsonData: any) {
 }
 
 function handleMultipleTablesFormat(db: any, jsonData: any[]) {
+    // [ { "table1": [{"field1": "a", "field2": "b"}] }, { "table2": [{"field1": "c", "field2": "d"}, {"field1": "e", "field2": "f"}] } ]
     jsonData.forEach((tableData: any) => {
         const tableName = Object.keys(tableData)[0];
         createTableAndInsertData(db, tableName, tableData[tableName]);
