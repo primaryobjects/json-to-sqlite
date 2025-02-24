@@ -38,30 +38,13 @@ export async function convertJsonToSqlite(fileUri: vscode.Uri | undefined) {
 
             db.serialize(() => {
                 if (Array.isArray(jsonData) && jsonData.length > 0 && typeof jsonData[0] === 'object') {
-                        if (!Array.isArray(jsonData[0])) {
-                            const jsonDataEntry = jsonData[0];
-                            const keys = Object.keys(jsonData[0]);
-                            if (keys && keys.length > 0) {
-                                if (Array.isArray(jsonDataEntry[keys[0]])) {
-                                    // Format 3: Multiple tables [ { "table1": [], {"table2": []}}]
-                                    jsonData.forEach((tableData: any) => {
-                                        const tableName = Object.keys(tableData)[0];
-                                        createTableAndInsertData(db, tableName, tableData[tableName]);
-                                    });
-                                }
-                                else {
-                                    // Format 1: Single table [{ ... }]
-                                    const tableName = useFilenameAsTableName ? fileName : customTableName || 'data';
-                                    createTableAndInsertData(db, tableName, jsonData);
-                                }
-                            }
-                        }
+                    if (!Array.isArray(jsonData[0])) {
+                        handleSingleTableFormat(db, jsonData, fileName, useFilenameAsTableName, customTableName);
+                    } else {
+                        handleMultipleTablesFormat(db, jsonData);
+                    }
                 } else if (typeof jsonData === 'object') {
-                    // Format 2: Multiple tables { "table": [] }
-                    const tableNames = Object.keys(jsonData);
-                    tableNames.forEach(tableName => {
-                        createTableAndInsertData(db, tableName, jsonData[tableName]);
-                    });
+                    handleNamedTableFormat(db, jsonData);
                 }
             });
 
@@ -69,6 +52,25 @@ export async function convertJsonToSqlite(fileUri: vscode.Uri | undefined) {
             vscode.window.showInformationMessage(`SQLite file created at ${filePath}.sqlite`);
         });
     }
+}
+
+function handleSingleTableFormat(db: any, jsonData: any[], fileName: string, useFilenameAsTableName: boolean, customTableName: string) {
+    const tableName = useFilenameAsTableName ? fileName : customTableName || 'data';
+    createTableAndInsertData(db, tableName, jsonData);
+}
+
+function handleNamedTableFormat(db: any, jsonData: any) {
+    const tableNames = Object.keys(jsonData);
+    tableNames.forEach(tableName => {
+        createTableAndInsertData(db, tableName, jsonData[tableName]);
+    });
+}
+
+function handleMultipleTablesFormat(db: any, jsonData: any[]) {
+    jsonData.forEach((tableData: any) => {
+        const tableName = Object.keys(tableData)[0];
+        createTableAndInsertData(db, tableName, tableData[tableName]);
+    });
 }
 
 function createTableAndInsertData(db: any, tableName: string, data: any[]) {
