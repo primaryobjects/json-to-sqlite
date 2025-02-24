@@ -39,7 +39,7 @@ To change the name of the table saved in the sqlite file, use the following step
 
 The following JSON file formats are supported for conversion to SQLite:
 
-### Array
+### Single Table Format Array
 
 This results in a single table with the name of the JSON file or as configured in settings.
 
@@ -58,7 +58,7 @@ This results in a single table with the name of the JSON file or as configured i
 ]
 ```
 
-### Format 2
+### Names Table Format
 
 This results in a single table with the name "locations".
 
@@ -81,7 +81,7 @@ This results in a single table with the name "locations".
 }
 ```
 
-### Format 3
+### Multiple Names Table Format
 
 This results in an sqlite database containing two tables with the names "table1" and "table2".
 
