@@ -83,7 +83,7 @@ This results in a single table with the name "locations".
 
 ### Multiple Named Table Format
 
-This results in an sqlite database containing two tables with the names "table1" and "table2".
+This results in two tables with the names "table1" and "table2".
 
 ```json
 [
