@@ -2,7 +2,7 @@
   "name": "json-to-sqlite",
   "displayName": "json-to-sqlite",
   "description": "Convert JSON data to SQLite database",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/primaryobjects/json-to-sqlite.git"
@@ -18,7 +18,7 @@
     "Other"
   ],
   "main": "./out/extension.js",
-  "activationEvents": [],
+  "activationEvents": [ "onStartupFinished" ],
   "contributes": {
     "commands": [
       {
