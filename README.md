@@ -58,7 +58,7 @@ This results in a single table with the name of the JSON file or as configured i
 ]
 ```
 
-### Names Table Format
+### Named Table Format
 
 This results in a single table with the name "locations".
 
@@ -81,7 +81,7 @@ This results in a single table with the name "locations".
 }
 ```
 
-### Multiple Names Table Format
+### Multiple Named Table Format
 
 This results in an sqlite database containing two tables with the names "table1" and "table2".
 
