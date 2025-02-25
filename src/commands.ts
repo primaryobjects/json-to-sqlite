@@ -1,8 +1,10 @@
 import * as vscode from 'vscode';
-import fs from 'fs';
+import { promises as fs } from 'fs'; // Use the fs promises API for async file operations    
 import * as path from 'path';
-const sqlite3 = require('sqlite3').verbose();
+import { Database, open } from 'sqlite';
+import sqlite3 from 'sqlite3';
 
+// Determine the SQLite column type based on the JavaScript value type  
 function getColumnType(value: any): string {
     if (typeof value === 'number') {
         return Number.isInteger(value) ? 'INTEGER' : 'REAL';
@@ -10,120 +12,128 @@ function getColumnType(value: any): string {
     return 'TEXT';
 }
 
+// Main function to convert JSON to SQLite  
 export async function convertJsonToSqlite(fileUri: vscode.Uri | undefined) {
+    // Prompt user to select a file if not provided  
     if (!fileUri) {
         fileUri = (await vscode.window.showOpenDialog({ canSelectFiles: true, canSelectMany: false, filters: { 'JSON Files': ['json'] } }))?.[0];
     }
 
     if (fileUri) {
-        const jsonFile = fileUri.fsPath;
-        fs.readFile(jsonFile, 'utf8', (err, data) => {
-            if (err) {
-                vscode.window.showErrorMessage('Failed to read file');
-                return;
-            }
-
+        try {
+            // Read and parse the JSON file  
+            const jsonFile = fileUri.fsPath;
+            const data = await fs.readFile(jsonFile, 'utf8');
             const jsonData = JSON.parse(data);
+
+            // Handle empty or invalid JSON  
             if (!jsonData || (Array.isArray(jsonData) && jsonData.length === 0)) {
                 vscode.window.showErrorMessage('JSON file is empty or not valid');
                 return;
             }
 
+            // Prepare the database file path  
             const filePath = jsonFile.split('.').slice(0, -1).join('.');
-            const fileName = path.basename(jsonFile, path.extname(jsonFile));
-            const useFilenameAsTableName = vscode.workspace.getConfiguration('jsonToSqlite').get('useFilenameAsTableName', true);
-            const customTableName = vscode.workspace.getConfiguration('jsonToSqlite').get('customTableName', '');
-
-            const db = new sqlite3.Database(`${filePath}.sqlite`);
-
-            db.serialize(() => {
-                if (Array.isArray(jsonData) && jsonData.length > 0 && typeof jsonData[0] === 'object') {
-                    if (!Array.isArray(jsonData[0])) {
-                        const jsonDataEntry = jsonData[0];
-                        const keys = Object.keys(jsonData[0]);
-                        if (keys && keys.length > 0) {
-                            if (Array.isArray(jsonDataEntry[keys[0]])) {
-                                handleMultipleTablesFormat(db, jsonData);
-                            }
-                            else {
-                                handleSingleTableFormat(db, jsonData, fileName, useFilenameAsTableName, customTableName);
-                            }
-                        }
-                    }
-                } else if (typeof jsonData === 'object') {
-                    handleNamedTableFormat(db, jsonData);
-                }
+            // Open the SQLite database  
+            const db = await open({
+                filename: `${filePath}.sqlite`,
+                driver: sqlite3.Database
             });
 
-            db.close();
+            // Process the JSON data into the SQLite database  
+            if (Array.isArray(jsonData) && jsonData.length > 0 && typeof jsonData[0] === 'object') {
+                if (!Array.isArray(jsonData[0])) {
+                    const jsonDataEntry = jsonData[0];
+                    const keys = Object.keys(jsonData[0]);
+                    if (keys && keys.length > 0) {
+                        if (Array.isArray(jsonDataEntry[keys[0]])) {
+                            await handleMultipleTablesFormat(db, jsonData);
+                        } else {
+                            // Use file name as table name by default  
+                            const fileName = path.basename(jsonFile, path.extname(jsonFile));
+                            const useFilenameAsTableName = vscode.workspace.getConfiguration('jsonToSqlite').get('useFilenameAsTableName', true);
+                            const customTableName = vscode.workspace.getConfiguration('jsonToSqlite').get('customTableName', '');
+                            await handleSingleTableFormat(db, jsonData, fileName, useFilenameAsTableName, customTableName);
+                        }
+                    }
+                }
+            } else if (typeof jsonData === 'object') {
+                await handleNamedTableFormat(db, jsonData);
+            }
+
+            // Close the database connection  
+            await db.close();
             vscode.window.showInformationMessage(`SQLite file created at ${filePath}.sqlite`);
-        });
+        } catch (err) {
+            vscode.window.showErrorMessage('Failed to process JSON to SQLite conversion');
+            console.error(err);
+        }
     }
 }
 
-function handleSingleTableFormat(db: any, jsonData: any[], fileName: string, useFilenameAsTableName: boolean, customTableName: string) {
+async function handleSingleTableFormat(db: Database<sqlite3.Database, sqlite3.Statement>, jsonData: any[], fileName: string, useFilenameAsTableName: boolean, customTableName: string) {
     // [{"field1": "a", "field2": "b"}]
     const tableName = useFilenameAsTableName ? fileName : customTableName || 'data';
-    createTableAndInsertData(db, tableName, jsonData);
+    await createTableAndInsertData(db, tableName, jsonData);
 }
 
-function handleNamedTableFormat(db: any, jsonData: any) {
+async function handleNamedTableFormat(db: Database<sqlite3.Database, sqlite3.Statement>, jsonData: any) {
     // { "table1": [{"field1": "a", "field2": "b"}], "table2": [{"field1": "a", "field2": "b"}] }
-    const tableNames = Object.keys(jsonData);
-    tableNames.forEach(tableName => {
-        createTableAndInsertData(db, tableName, jsonData[tableName]);
-    });
+    for (const tableName in jsonData) {
+        // Check if the property belongs to the object itself, not its prototype chain  
+        if (jsonData.hasOwnProperty(tableName)) {
+            await createTableAndInsertData(db, tableName, jsonData[tableName]);
+        }
+    }
 }
 
-function handleMultipleTablesFormat(db: any, jsonData: any[]) {
+async function handleMultipleTablesFormat(db: Database<sqlite3.Database, sqlite3.Statement>, jsonData: any[]) {
     // [ { "table1": [{"field1": "a", "field2": "b"}] }, { "table2": [{"field1": "c", "field2": "d"}, {"field1": "e", "field2": "f"}] } ]
-    jsonData.forEach((tableData: any) => {
-        const tableName = Object.keys(tableData)[0];
-        createTableAndInsertData(db, tableName, tableData[tableName]);
-    });
+    for (const tableData of jsonData) {
+        const tableName = Object.keys(tableData)[0]; // Get table name from object key  
+        await createTableAndInsertData(db, tableName, tableData[tableName]);
+    }
 }
 
-function createTableAndInsertData(db: any, tableName: string, data: any[]) {
-    const columns = Object.keys(data[0]).map(key => `${key} ${getColumnType(data[0][key])}`).join(', ');
-    db.run(`CREATE TABLE ${tableName} (${columns})`);
+// Create a table and insert data into it  
+async function createTableAndInsertData(db: Database<sqlite3.Database, sqlite3.Statement>, tableName: string, data: any[]) {
+    if (data.length) { // Ensure there is data to process  
+        // Construct the CREATE TABLE command with appropriate column types  
+        const columns = Object.keys(data[0]).map(key => `${key} ${getColumnType(data[0][key])}`).join(', ');
+        await db.run(`CREATE TABLE IF NOT EXISTS ${tableName} (${columns})`);
 
-    const placeholders = Object.keys(data[0]).map(() => '?').join(', ');
-    const stmt = db.prepare(`INSERT INTO ${tableName} (${Object.keys(data[0]).join(', ')}) VALUES (${placeholders})`);
-
-    data.forEach((item: any) => {
-        const values = Object.keys(item).map(key => item[key]);
-        stmt.run(values);
-    });
-    stmt.finalize();
-
-    db.each(`SELECT * FROM ${tableName}`, (err: any, row: any) => {
-        if (err) {
-            console.error(err.message);
-        } else {
-            console.log(row);
+        // Prepare and execute the INSERT INTO command for each data item  
+        const insertCommand = `INSERT INTO ${tableName} (${Object.keys(data[0]).join(', ')}) VALUES (${Object.keys(data[0]).map(() => '?').join(', ')})`;
+        for (const item of data) {
+            await db.run(insertCommand, Object.values(item));
         }
-    });
+    }
 }
 
+// Preview the first 3 rows of the first table in the SQLite database  
 export async function previewSqlite(uri: vscode.Uri) {
-    const db = new sqlite3.Database(uri.fsPath);
-    db.all("SELECT * FROM sqlite_master WHERE type='table'", (err: any, tables: any) => {
-        if (err) {
-            vscode.window.showErrorMessage(`Error reading SQLite file: ${err.message}`);
-            return;
-        }
+    try {
+        // Open the database  
+        const db = await open({
+            filename: uri.fsPath,
+            driver: sqlite3.Database
+        });
+
+        // Retrieve all table names  
+        const tables = await db.all("SELECT name FROM sqlite_master WHERE type='table'");
         if (tables.length === 0) {
             vscode.window.showInformationMessage('No tables found in the SQLite database.');
             return;
         }
+
+        // Preview the first 3 rows from the first table  
         const tableName = tables[0].name;
-        db.all(`SELECT * FROM ${tableName} LIMIT 3`, (err: any, rows: any) => {
-            if (err) {
-                vscode.window.showErrorMessage(`Error reading table data: ${err.message}`);
-                return;
-            }
-            vscode.window.showInformationMessage(`First 3 rows of ${tableName}: ${JSON.stringify(rows, null, 2)}`);
-        });
-    });
-    db.close();
-}
+        const rows = await db.all(`SELECT * FROM ${tableName} LIMIT 3`);
+        vscode.window.showInformationMessage(`First 3 rows of ${tableName}: ${JSON.stringify(rows, null, 2)}`);
+
+        // Close the database connection  
+        await db.close();
+    } catch (err: any) {
+        vscode.window.showErrorMessage(`Error reading SQLite file: ${err.message}`);
+    }
+}    
