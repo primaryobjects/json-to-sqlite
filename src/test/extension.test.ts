@@ -191,4 +191,36 @@ suite('Extension Test Suite', () => {
             cleanup(jsonFilePath, sqliteFilePath);
         }
     });
+
+    test('GUIDs are stored in uppercase', async () => {
+        const jsonFilePath = path.join(__dirname, 'test_guids.json');
+        const sqliteFilePath = jsonFilePath.replace('.json', '.sqlite');
+        const jsonData = [
+            {
+                "id": 1,
+                "guid": "123e4567-e89b-12d3-a456-426614174000"
+            },
+            {
+                "id": 2,
+                "guid": "123e4567-e89b-12d3-a456-426614174001"
+            }
+        ];
+
+        try {
+            fs.writeFileSync(jsonFilePath, JSON.stringify(jsonData, null, 2));
+
+            const fileUri = vscode.Uri.file(jsonFilePath);
+            await convertJsonToSqlite(fileUri);
+
+            assert.ok(fs.existsSync(sqliteFilePath), 'SQLite file should be created');
+
+            const rows: any = await queryDatabase(sqliteFilePath, 'SELECT * FROM test_guids');
+            assert.strictEqual(rows.length, 2, 'Table "test_guids" should contain 2 rows');
+            assert.strictEqual(rows[0].guid, '123E4567-E89B-12D3-A456-426614174000', 'GUID should be stored in uppercase');
+            assert.strictEqual(rows[1].guid, '123E4567-E89B-12D3-A456-426614174001', 'GUID should be stored in uppercase');
+        }
+        finally {
+            cleanup(jsonFilePath, sqliteFilePath);
+        }
+    });
 });
