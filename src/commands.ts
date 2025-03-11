@@ -7,8 +7,8 @@ import * as vscode from 'vscode';
 
 // Determine the SQLite column type based on the JavaScript value type  
 function getColumnType(value: any): string {
-    if (typeof value === 'number') {
-        return Number.isInteger(value) ? 'INTEGER' : 'REAL';
+    if (['number', 'boolean'].includes(typeof value)) {
+        return Number.isInteger(value) || (typeof value === 'boolean') ? 'INTEGER' : 'REAL';
     }
     return 'TEXT';
 }
