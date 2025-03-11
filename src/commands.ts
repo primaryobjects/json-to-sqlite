@@ -1,9 +1,9 @@
 
-import * as vscode from 'vscode';
 import { promises as fs } from 'fs'; // Use the fs promises API for async file operations    
 import * as path from 'path';
 import { Database, open } from 'sqlite';
 import sqlite3 from 'sqlite3';
+import * as vscode from 'vscode';
 
 // Determine the SQLite column type based on the JavaScript value type  
 function getColumnType(value: any): string {
@@ -84,7 +84,7 @@ export async function convertJsonToSqlite(fileUri: vscode.Uri | undefined) {
             await db.close();
             vscode.window.showInformationMessage(`SQLite file created at ${filePath}.sqlite`);
         } catch (err) {
-            vscode.window.showErrorMessage('Failed to process JSON to SQLite conversion');
+            vscode.window.showErrorMessage(`Failed to process JSON to SQLite conversion. ${err}`);
             console.error(err);
         }
     }
