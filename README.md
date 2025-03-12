@@ -122,6 +122,16 @@ This results in two tables with the names "table1" and "table2".
 ]
 ```
 
+## Deployment
+
+To deploy and publish the extension, use the following steps.
+
+1. Open a VS Code terminal window and use the command: `vsce package`
+2. In VS Code, open the Extensions tab and click '...' in the top-right and choose **Install from VSIX**.
+3. Select to install the newly packaged .vsix file created in step 1.
+4. Test the extension.
+5. Upload the package to the [marketplace](https://marketplace.visualstudio.com/manage).
+
 ## License
 
 MIT
