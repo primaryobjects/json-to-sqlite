@@ -1,15 +1,34 @@
-import * as vscode from 'vscode';
+
 import { promises as fs } from 'fs'; // Use the fs promises API for async file operations    
 import * as path from 'path';
 import { Database, open } from 'sqlite';
 import sqlite3 from 'sqlite3';
+import * as vscode from 'vscode';
 
 // Determine the SQLite column type based on the JavaScript value type  
 function getColumnType(value: any): string {
-    if (typeof value === 'number') {
-        return Number.isInteger(value) ? 'INTEGER' : 'REAL';
+    if (['number', 'boolean'].includes(typeof value)) {
+        return Number.isInteger(value) || (typeof value === 'boolean') ? 'INTEGER' : 'REAL';
     }
     return 'TEXT';
+}
+
+// Helper function to convert GUIDs to uppercase
+function convertGuidsToUpperCase(data: any[]): any[] {
+    return data.map(item => {
+        const newItem: any = {};
+        for (const key in item) {
+            if (item.hasOwnProperty(key)) {
+                const value = item[key];
+                if (typeof value === 'string' && /^[0-9a-fA-F-]{36}$/.test(value)) {
+                    newItem[key] = value.toUpperCase();
+                } else {
+                    newItem[key] = value;
+                }
+            }
+        }
+        return newItem;
+    });
 }
 
 // Main function to convert JSON to SQLite  
@@ -65,7 +84,7 @@ export async function convertJsonToSqlite(fileUri: vscode.Uri | undefined) {
             await db.close();
             vscode.window.showInformationMessage(`SQLite file created at ${filePath}.sqlite`);
         } catch (err) {
-            vscode.window.showErrorMessage('Failed to process JSON to SQLite conversion');
+            vscode.window.showErrorMessage(`Failed to process JSON to SQLite conversion. ${err}`);
             console.error(err);
         }
     }
@@ -98,6 +117,9 @@ async function handleMultipleTablesFormat(db: Database<sqlite3.Database, sqlite3
 // Create a table and insert data into it  
 async function createTableAndInsertData(db: Database<sqlite3.Database, sqlite3.Statement>, tableName: string, data: any[]) {
     if (data.length) { // Ensure there is data to process  
+        // Convert GUIDs to uppercase
+        data = convertGuidsToUpperCase(data);
+
         // Construct the CREATE TABLE command with appropriate column types  
         const columns = Object.keys(data[0]).map(key => `${key} ${getColumnType(data[0][key])}`).join(', ');
         await db.run(`CREATE TABLE IF NOT EXISTS ${tableName} (${columns})`);
