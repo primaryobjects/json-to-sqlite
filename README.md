@@ -48,7 +48,7 @@ This results in a single table with the name of the JSON file or as configured i
   {
     "id": 1,
     "first_name": "Loella",
-    "last_name": "Albers",
+    "last_name": "Albers"
   },
   {
     "id": 2,
@@ -69,7 +69,7 @@ This results in a single table with the name "locations".
       "id": 0,
       "name": "Acme Fresh Start Housing",
       "city": "Chicago",
-      "state": "IL",
+      "state": "IL"
     },
     {
       "id": 1,
@@ -93,13 +93,13 @@ This results in two tables with the names "table1" and "table2".
         "id": 0,
         "name": "Acme Fresh Start Housing",
         "city": "Chicago",
-        "state": "IL",
+        "state": "IL"
       },
       {
         "id": 1,
         "name": "A113 Transitional Housing",
         "city": "Santa Monica",
-        "state": "CA",
+        "state": "CA"
       }
     ]
   },
@@ -109,13 +109,13 @@ This results in two tables with the names "table1" and "table2".
         "id": 0,
         "name": "Acme Fresh Start Housing",
         "city": "Chicago",
-        "state": "IL",
+        "state": "IL"
       },
       {
         "id": 1,
         "name": "A113 Transitional Housing",
         "city": "Santa Monica",
-        "state": "CA",
+        "state": "CA"
       }
     ]
   }
